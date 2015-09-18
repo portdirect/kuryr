@@ -140,11 +140,12 @@ def _handle_explicit_allocation(neutron_network_id, endpoint_id,
         _process_subnet(neutron_network_id, endpoint_id, interface_cidrv6,
                         new_subnets, existing_subnets)
 
+    created_subnets = []
     if new_subnets:
         # Bulk create operation of subnets
         created_subnets = app.neutron.create_subnet({'subnets': new_subnets})
 
-        return created_subnets
+    return created_subnets
 
 
 def _create_subnets_and_or_port(interfaces, neutron_network_id, endpoint_id):
