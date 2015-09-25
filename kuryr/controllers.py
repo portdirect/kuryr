@@ -17,8 +17,12 @@ import jsonschema
 import netaddr
 from neutronclient.common import exceptions as n_exceptions
 from oslo_config import cfg
+from oslo_concurrency import processutils
+from oslo_utils import excutils
+import pyroute2
 
 from kuryr import app
+from kuryr import binding
 from kuryr.common import constants
 from kuryr.common import exceptions
 from kuryr import schemata
@@ -80,6 +84,16 @@ def _get_subnets_by_attrs(**attrs):
             .format(', '.join(['{0}={1}'.format(k, v)
                                for k, v in attrs.items()])))
     return subnets['subnets']
+
+
+def _get_ports_by_attrs(**attrs):
+    ports = app.neutron.list_ports(**attrs)
+    if len(ports) > 1:
+        raise exceptions.DuplicatedResourceException(
+            "Multiple Neutron ports exist for the params {0} "
+            .format(', '.join(['{0}={1}'.format(k, v)
+                               for k, v in attrs.items()])))
+    return ports['ports']
 
 
 def _handle_allocation_from_pools(neutron_network_id, existing_subnets):
@@ -502,7 +516,90 @@ def network_driver_join():
                      .format(json_data))
     jsonschema.validate(json_data, schemata.JOIN_SCHEMA)
 
-    return flask.jsonify(constants.SCHEMA['JOIN'])
+    neutron_network_name = json_data['NetworkID']
+    endpoint_id = json_data['EndpointID']
+
+    filtered_networks = app.neutron.list_networks(name=neutron_network_name)
+
+    if not filtered_networks:
+        return flask.jsonify({
+            'Err': "Neutron network associated with ID {0} doesn't exit."
+            .format(neutron_network_name)
+        })
+    elif len(filtered_networks) > 1:
+        raise exceptions.DuplicatedResourceException(
+            "Multiple Neutron Networks exist for NetworkID {0}"
+            .format(neutron_network_name))
+    else:
+        neutron_network_id = filtered_networks['networks'][0]['id']
+        # The SandboxKey is in the form of "/run/docker/netns/:CONTAINER_ID".
+        sandbox_key = json_data['SandboxKey']
+        container_id = sandbox_key.rsplit('/')[-1]
+
+        # FIXME(tfukushima): In the updated API, a port is created for a
+        # reuqest against the endpoint. So the index for the port is obsolete
+        # and verbose. I'm also assuming the endpint has only one port here.
+        # The new API to be introduced in Docker 1.9.0 accepts only one port
+        # and the current libnetwork doesn't seem to provide the CLI interface
+        # to specify the configuration for the multiple interfaces, so this
+        # assumption should be reasonable.
+        neutron_port_name = '-'.join([endpoint_id, '0', 'port'])
+        filtered_ports = _get_ports_by_attrs(name=neutron_port_name)
+        if not filtered_ports:
+            raise exceptions.NoResourceException(
+                "The port doesn't exist for the name {0}"
+                .format(neutron_port_name))
+        neutron_port = filtered_ports[0]
+        all_subnets = _get_subnets_by_attrs(network_id=neutron_network_id)
+
+        try:
+            # ifname, peer_name = _port_bind(container_id, neutron_port)
+            ifname, peer_name, (stdout, stderr) = binding.port_bind(
+                container_id, neutron_port, all_subnets)
+            app.logger.debug(stdout)
+            app.logger.error(stderr)
+        except pyroute2.ipdb.common.CreateException:
+            with excutils.save_and_reraise_exception() as ctxt:
+                app.logger.error('Creating the veth pair was failed.')
+                ctxt.reraise = True
+        except pyroute2.ipdb.common.CommitException:
+            with excutils.save_and_reraise_exception() as ctxt:
+                app.logger.error(
+                    'Could not configure the veth endpoint for the container.')
+                ctxt.reraise = True
+        except processutils.ProcessExecutionError:
+            with excutils.save_and_reraise_exception() as ctxt:
+                app.logger.error(
+                    'Could not bind the Neutron port to the veth endpoint.')
+                ctxt.reraise = True
+
+        join_response = {
+            "InterfaceNames": [{
+                "SrcName": peer_name,
+                "DstPrefix": "eth"
+            }],
+            "StaticRoutes": []
+        }
+
+        for subnet in all_subnets:
+            if subnet['ip_version'] == 4:
+                join_response['Gateway'] = subnet.get('gateway_ip', '')
+            else:
+                join_response['GatewayIPv6'] = subnet.get('gateway_ip', '')
+        host_routes = subnet.get('host_routes', [])
+
+        for host_route in host_routes:
+            static_route = {
+                'Destination': host_route['destination']
+            }
+            if host_route.get('nexthop', None):
+                static_route['RouteType'] = 0
+                static_route['NextHop'] = host_route['nexthop']
+            else:
+                static_route['RouteType'] = 1
+            join_response['StaticRoutes'].append(static_route)
+
+        return flask.jsonify(join_response)
 
 
 @app.route('/NetworkDriver.Leave', methods=['POST'])

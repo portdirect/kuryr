@@ -67,3 +67,10 @@ CONF = cfg.CONF
 CONF.register_opts(core_opts)
 CONF.register_opts(neutron_opts, group='neutron_client')
 CONF.register_opts(keystone_opts, group='keystone_client')
+
+binding_opts = [
+    cfg.StrOpt('binding_executable_path',
+               default=os.path.join(CONF.bindir, "binding/midonet.sh"),
+               help=('The path of the executable script for the bindig.'))
+]
+CONF.register_opts(binding_opts, 'binding')
