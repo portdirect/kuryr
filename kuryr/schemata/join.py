@@ -36,9 +36,6 @@ JOIN_SCHEMA = {
             u'description': u'Sandbox Key',
             u'$ref': u'#/definitions/commons/definitions/sandbox_key'
         },
-        u'Options': {
-            u'$ref': u'#/definitions/commons/definitions/options'
-        },
         u'EndpointID': {
             u'description': u'Endpoint ID',
             u'$ref': u'#/definitions/commons/definitions/id'
