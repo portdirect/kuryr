@@ -135,6 +135,12 @@ def _handle_explicit_allocation(neutron_network_id, endpoint_id,
 
 def _create_subnets_and_or_port(interfaces, neutron_network_id, endpoint_id):
     response_interfaces = []
+    if not interfaces:
+        interfaces.append({
+            'ID': 0,
+            'MacAddress': utils.generate_random_mac()
+        })
+
     for interface in interfaces:
         existing_subnets = []
         created_subnets = {}
@@ -166,15 +172,16 @@ def _create_subnets_and_or_port(interfaces, neutron_network_id, endpoint_id):
             fixed_ips = port['fixed_ips'] = []
             for subnet in all_subnets:
                 fixed_ip = {'subnet_id': subnet['id']}
-                if subnet['ip_version'] == 4:
-                    cidr = netaddr.IPNetwork(interface_cidrv4)
-                else:
-                    cidr = netaddr.IPNetwork(interface_cidrv6)
-                subnet_cidr = '/'.join([str(cidr.network),
-                                        str(cidr.prefixlen)])
-                if subnet['cidr'] != subnet_cidr:
-                    continue
-                fixed_ip['ip_address'] = str(cidr.ip)
+                if interface_cidrv4 or interface_cidrv6:
+                    if subnet['ip_version'] == 4:
+                        cidr = netaddr.IPNetwork(interface_cidrv4)
+                    else:
+                        cidr = netaddr.IPNetwork(interface_cidrv6)
+                    subnet_cidr = '/'.join([str(cidr.network),
+                                            str(cidr.prefixlen)])
+                    if subnet['cidr'] != subnet_cidr:
+                        continue
+                    fixed_ip['ip_address'] = str(cidr.ip)
                 fixed_ips.append(fixed_ip)
             app.neutron.create_port({'port': port})
 
