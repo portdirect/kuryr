@@ -11,6 +11,7 @@
 # under the License.
 
 import os
+import random
 
 import flask
 import jsonschema
@@ -87,3 +88,20 @@ def get_sandbox_key(container_id):
     :returns: the constructed sandbox key as string
     """
     return os.path.join(DOCKER_NETNS_BASE, container_id[:12])
+
+
+def generate_random_mac():
+    """Generates a random MAC address.
+
+    :returns: the generated random MAC address as string in the lower case
+    """
+    random_mac = [
+        0x00,
+        0x16,
+        0x3e,
+        random.randint(0x00, 0x7f),
+        random.randint(0x00, 0xff),
+        random.randint(0x00, 0xff)
+    ]
+
+    return ':'.join(map(lambda x: "%02x" % x, random_mac)).lower()

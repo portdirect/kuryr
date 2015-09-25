@@ -12,6 +12,7 @@
 
 import hashlib
 import random
+import re
 
 import ddt
 
@@ -29,3 +30,11 @@ class TestKuryrUtils(base.TestKuryrBase):
         sandbox_key = utils.get_sandbox_key(fake_container_id)
         expected = '/'.join([utils.DOCKER_NETNS_BASE, fake_container_id[:12]])
         self.assertEqual(expected, sandbox_key)
+
+    def test_generate_random_bac(self):
+        mac_regexp = ('^((?:[0-9a-f]{2}:){5}[0-9a-f]{2}|'
+                      '(?:[0-9A-F]{2}:){5}[0-9A-F]{2})$')
+        r = re.compile(mac_regexp)
+        generated_mac = utils.generate_random_mac()
+        matched = r.match(generated_mac)
+        self.assertEqual(matched.group(), generated_mac)
