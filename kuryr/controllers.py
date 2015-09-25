@@ -443,17 +443,19 @@ def network_driver_join():
     If the binding is succeeded, the following JSON response is returned.::
 
         {
-            "InterfaceName": {
+            "InterfaceNames": [{
                 SrcName: string,
                 DstPrefix: string
-            },
+            }],
             "Gateway": string,
             "GatewayIPv6": string,
             "StaticRoutes": [{
                 "Destination": string,
                 "RouteType": int,
                 "NextHop": string,
-            }, ...]
+            }, ...],
+            "HostsPath": string,
+            "ResolvConfPath": string
         }
 
     See the following link for more details about the spec:
