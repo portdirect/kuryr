@@ -553,9 +553,8 @@ def network_driver_join():
         all_subnets = _get_subnets_by_attrs(network_id=neutron_network_id)
 
         try:
-            # ifname, peer_name = _port_bind(container_id, neutron_port)
             ifname, peer_name, (stdout, stderr) = binding.port_bind(
-                container_id, neutron_port, all_subnets)
+                endpoint_id, neutron_port, all_subnets)
             app.logger.debug(stdout)
             app.logger.error(stderr)
         except pyroute2.ipdb.common.CreateException:

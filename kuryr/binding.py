@@ -34,10 +34,10 @@ def _is_up(interface):
     return (flags & IFF_UP) == 1
 
 
-def port_bind(container_id, neutron_port, neutron_subnets):
+def port_bind(endpoint_id, neutron_port, neutron_subnets):
     """Binds the Neutorn port to the network interface on the host.
 
-    :param container_id: the ID of the Docker container as string
+    :param endpoint_id: the ID of the Docker container as string
     :param neutron_port: a port dictionary returned from python-neutronclient
     :param neutron_subnets: a list of all subnets potentially related with the
                             neutron_port under the same network
@@ -48,7 +48,7 @@ def port_bind(container_id, neutron_port, neutron_subnets):
              pyroute2.ipdb.common.CommitException,
              processutils.ProcessExecutionError
     """
-    ifname = container_id[:8] + VETH_POSTFIX
+    ifname = endpoint_id[:8] + VETH_POSTFIX
     peer_name = ifname + CONTAINER_VETH_POSTFIX
     subnets_dict = {subnet['id']: subnet for subnet in neutron_subnets}
 
