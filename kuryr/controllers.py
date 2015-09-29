@@ -617,5 +617,41 @@ def network_driver_leave():
     app.logger.debug("Received JSON data {0} for /NetworkDriver.DeleteEndpoint"
                      .format(json_data))
     jsonschema.validate(json_data, schemata.LEAVE_SCHEMA)
+    neutron_network_name = json_data['NetworkID']
+    endpoint_id = json_data['EndpointID']
+
+    filtered_networks = app.neutron.list_networks(name=neutron_network_name)
+
+    if not filtered_networks:
+        return flask.jsonify({
+            'Err': "Neutron network associated with ID {0} doesn't exit."
+            .format(neutron_network_name)
+        })
+    elif len(filtered_networks) > 1:
+        raise exceptions.DuplicatedResourceException(
+            "Multiple Neutron Networks exist for NetworkID {0}"
+            .format(neutron_network_name))
+    else:
+        neutron_port_name = '-'.join([endpoint_id, '0', 'port'])
+        filtered_ports = _get_ports_by_attrs(name=neutron_port_name)
+        if not filtered_ports:
+            raise exceptions.NoResourceException(
+                "The port doesn't exist for the name {0}"
+                .format(neutron_port_name))
+        neutron_port = filtered_ports[0]
+        try:
+            stdout, stderr = binding.port_unbind(endpoint_id, neutron_port)
+            app.logger.debug(stdout)
+            app.logger.error(stderr)
+        except processutils.ProcessExecutionError:
+            with excutils.save_and_reraise_exception() as ctxt:
+                app.logger.error(
+                    'Could not unbind the Neutron port from the veth '
+                    'endpoint.')
+                ctxt.reraise = True
+        except pyroute2.netlink.NetlinkError:
+            with excutils.save_and_reraise_exception() as ctxt:
+                app.logger.error('Deleting the veth pair was failed.')
+                ctxt.reraise = True
 
     return flask.jsonify(constants.SCHEMA['SUCCESS'])

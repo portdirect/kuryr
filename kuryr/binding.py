@@ -100,3 +100,22 @@ def port_bind(endpoint_id, neutron_port, neutron_subnets):
         raise
 
     return (ifname, peer_name, (stdout, stderr))
+
+
+def port_unbind(endpoint_id, neutron_port):
+    """Unbinds the Neutorn port from the network interface on the host.k
+
+    :param endpoint_id: the ID of the Docker container as string
+    :param neutron_port: a port dictionary returned from python-neutronclient
+    :returns: the tuple of stdout and stderr returned by processutils.execute
+              invoked with the executable script for unbinding
+    :raises: processutils.ProcessExecutionError, pyroute2.netlink.NetlinkError
+    """
+    midonet_exec_path = config.CONF.binding.unbinding_executable_path
+    port_id = neutron_port['id']
+    stdout, stderr = processutils.execute(
+        'sudo', 'bash', midonet_exec_path, port_id)
+    ifname = endpoint_id[:8] + VETH_POSTFIX
+    cleanup_veth(ifname)
+
+    return stdout, stderr
