@@ -34,6 +34,24 @@ def _is_up(interface):
     return (flags & IFF_UP) == 1
 
 
+def cleanup_veth(ifname):
+    """Cleans the veth passed as an argument.
+
+    :param ifname: the name of the veth endpoint
+    :returns: the index of the interface which name is the given ifname if it
+              exists, otherwise None
+    :raises: pyroute2.netlink.NetlinkError
+    """
+    ipr = pyroute2.IPRoute()
+    veths = ipr.link_lookup(ifname=ifname)
+    if veths:
+        host_veth_index = veths[0]
+        ipr.link_remove(host_veth_index)
+        return host_veth_index
+    else:
+        return None
+
+
 def port_bind(endpoint_id, neutron_port, neutron_subnets):
     """Binds the Neutorn port to the network interface on the host.
 
@@ -74,7 +92,11 @@ def port_bind(endpoint_id, neutron_port, neutron_subnets):
 
     midonet_exec_path = config.CONF.binding.binding_executable_path
     port_id = neutron_port['id']
-    stdout, stderr = processutils.execute('sudo', 'bash', midonet_exec_path,
-                         port_id, ifname)
+    try:
+        stdout, stderr = processutils.execute(
+            'sudo', 'bash', midonet_exec_path, port_id, ifname)
+    except processutils.ProcessExecutionError:
+        cleanup_veth(ifname)
+        raise
 
     return (ifname, peer_name, (stdout, stderr))
