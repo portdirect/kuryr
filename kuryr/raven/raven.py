@@ -274,16 +274,18 @@ class Raven(service.Service):
             self._service_network = service_network
 
         service_subnet_cidr = config.CONF.k8s.cluster_service_subnet
+        service_subnet_name = HARDCODED_NET_NAME + '-' + service_subnet_cidr
         service_subnets = controllers._get_subnets_by_attrs(
-            unique=False, cidr=service_subnet_cidr,
+            unique=False, name=service_subnet_name,
             network_id=service_network['id'])
         if service_subnets:
             service_subnet = service_subnets[0]
             LOG.debug('Reusing the existing service subnet %s', service_subnet)
         else:
+            LOG.debug('About to create service subnet')
             ip = netaddr.IPNetwork(service_subnet_cidr)
             new_service_subnet = {
-                'name': HARDCODED_NET_NAME + '-' + service_subnet_cidr,
+                'name': service_subnet_name,
                 'network_id': service_network['id'],
                 'ip_version': ip.version,
                 'cidr': service_subnet_cidr,
@@ -293,21 +295,26 @@ class Raven(service.Service):
                 {'subnet': new_service_subnet})
             service_subnet = service_subnet_response['subnet']
             LOG.debug('Created a new service subnet %s', service_subnet)
+
         self._service_subnet = service_subnet
 
         neutron_service_network_id = service_network['id']
         neutron_router_id = namespace_router['id']
 
+        LOG.debug('Getting servie ports on service network')
         filtered_service_ports = controllers._get_ports_by_attrs(
             unique=False, device_owner='network:router_interface',
             device_id=neutron_router_id,
             network_id=neutron_service_network_id)
 
+        LOG.debug('Getting Service Subnet ID')
         service_subnet_id = service_subnet['id']
         service_router_ports = self._get_router_ports_by_subnet_id(
             service_subnet_id, filtered_service_ports)
 
+
         if not service_router_ports:
+            LOG.debug('Attempting to add service subnet to router')
             self.neutron.add_interface_router(
                 neutron_router_id, {'subnet_id': service_subnet_id})
         else:

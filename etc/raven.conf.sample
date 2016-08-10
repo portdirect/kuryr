@@ -1,0 +1,7 @@
+[DEFAULT]
+debug = True
+use_syslog = False
+logging_exception_prefix = "%(color)s%(asctime)s.%(msecs)03d TRACE %(name)s %(instance)s"
+logging_debug_format_suffix = "from (pid=%(process)d) %(funcName)s %(pathname)s:%(lineno)d"
+logging_default_format_string = "%(asctime)s.%(msecs)03d %(color)s%(levelname)s %(name)s [-%(color)s] %(instance)s%(color)s%(message)s"
+logging_context_format_string = "%(asctime)s.%(msecs)03d %(color)s%(levelname)s %(name)s [%(request_id)s %(user_name)s %(project_id)s%(color)s] %(instance)s%(color)s%(message)s"

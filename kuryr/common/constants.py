@@ -36,6 +36,9 @@ K8S_ANNOTATION_PORT_KEY = 'kuryr.org/neutron-port'
 K8S_ANNOTATION_SUBNET_KEY = 'kuryr.org/neutron-subnet'
 K8S_ANNOTATION_NETWORK_KEY = 'kuryr.org/neutron-network'
 K8S_ANNOTATION_VIP_KEY = 'kuryr.org/neutron-vip'
+K8S_ANNOTATION_LISTENER_KEY = 'kuryr.org/neutron-listener'
+K8S_ANNOTATION_FIP_KEY = 'kuryr.org/neutron-fip'
+K8S_ANNOTATION_FIPSG_KEY = 'kuryr.org/neutron-fipsg'
 
 K8S_API_ENDPOINT_BASE = config.CONF.k8s.api_root
 K8S_API_ENDPOINT_V1 = K8S_API_ENDPOINT_BASE + '/api/v1'
