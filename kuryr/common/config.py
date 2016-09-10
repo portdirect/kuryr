@@ -113,7 +113,7 @@ raven_opts = [
     cfg.IntOpt('max_wait_interval', default=30,
                help=_('The maximum time in seconds for the wait interval of '
                       'the translations')),
-    cfg.StrOpt('public_net_id', default='0f54aaa1-1416-4c26-b32f-29a22424dc03',
+    cfg.StrOpt('public_net_id', default='39029e1e-46f8-4330-8b0f-8d88db6a8a0e',
                help=_('The default network id to provide external access to cluster')),
     cfg.StrOpt('lb_method', default='ROUND_ROBIN',
                choices=['ROUND_ROBIN', 'LEAST_CONNECTIONS', 'SOURCE_IP'],
