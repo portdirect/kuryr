@@ -137,7 +137,7 @@ k8s_opts = [
     # https://github.com/kubernetes/kubernetes/search?utf8=%E2%9C%93&q=SERVICE_CLUSTER_IP_RANGE&type=Code  # noqa
     cfg.StrOpt('cluster_service_subnet',
                default=os.environ.get(
-                   'SERVICE_CLUSTER_IP_RANGE', '192.168.3.0/24')),
+                   'SERVICE_CLUSTER_IP_RANGE', '10.3.0.0/24')),
 ]
 
 
