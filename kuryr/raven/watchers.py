@@ -619,6 +619,7 @@ class K8sNamespaceWatcher(K8sAPIWatcher):
                 # Notify the namespace translation is done.
                 self.namespace_added.notify_all()
                 LOG.debug("Successfully updated the annotations.")
+
         elif event_type == DELETED_EVENT:
             namespace_network = jsonutils.loads(
                 annotations.get(constants.K8S_ANNOTATION_NETWORK_KEY, '{}'))
@@ -787,9 +788,6 @@ class K8sServicesWatcher(K8sAPIWatcher):
                     LOG.warning(
                         _LW('This is a headless service. '
                             'No neutron action required.'))
-                    pool = { 'id': 'HeadlessService'}
-                    annotations.update({constants.K8S_ANNOTATION_POOL_KEY: pool})
-                    self.service_added.notify()
                     return
 
                 # Create a loadbalancer.
@@ -1277,11 +1275,14 @@ class K8sEndpointsWatcher(K8sAPIWatcher):
             service_response_body = yield from service_response.read_all()
             service = utils.utf8_json_decoder(service_response_body)
             service_metadata = service.get('metadata', {})
+            service_spec = service.get('spec', {})
             service_annotations = service_metadata.get('annotations', {})
             serialized_pool = service_annotations.get(
                 constants.K8S_ANNOTATION_POOL_KEY, '{}')
             pool = jsonutils.loads(serialized_pool)
-
+            cluster_ip = service_spec['clusterIP']
+            if cluster_ip == 'None':
+                pool = { 'id': 'None'}
             return pool
 
         LOG.debug('Endpoints notification %s', decoded_json)
@@ -1334,7 +1335,9 @@ class K8sEndpointsWatcher(K8sAPIWatcher):
                 pool = yield from get_pool(service_endpoint)
             pool_id = pool.get('id')
             LOG.debug('Pool id %s', pool_id)
-
+            if pool_id == 'None':
+                LOG.info(_LI('This is a headless service, not updating pool'))
+                return
             if event_type in (ADDED_EVENT, MODIFIED_EVENT):
                 endpoint_members = _get_endpoint_members(content.get('subsets',
                                                                      ()))
