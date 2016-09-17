@@ -786,7 +786,9 @@ class K8sServicesWatcher(K8sAPIWatcher):
                 if cluster_ip == 'None':
                     LOG.warning(
                         _LW('This is a headless service. '
-                            'Ignoring the event.'))
+                            'No neutron action required.'))
+                    pool = { 'id': 'HeadlessService'}
+                    annotations.update({constants.K8S_ANNOTATION_POOL_KEY: pool})
                     self.service_added.notify()
                     return
 
