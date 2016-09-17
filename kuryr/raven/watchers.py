@@ -752,12 +752,7 @@ class K8sServicesWatcher(K8sAPIWatcher):
                 _LW('NodePort type service is not supported. '
                     'Ignoring the event.'))
             return
-        cluster_ip = service_spec.get('clusterIP', 'None')
-        if cluster_ip == 'None':
-            LOG.warning(
-                _LW('This is a headlenss service. '
-                    'Ignoring the event.'))
-            return
+
 
         if event_type == ADDED_EVENT:
             # Ensure the namespace translation is done.
@@ -788,6 +783,13 @@ class K8sServicesWatcher(K8sAPIWatcher):
 
                 # Get the cluserIP from kube.
                 cluster_ip = service_spec['clusterIP']
+
+                if cluster_ip == 'None':
+                    LOG.warning(
+                        _LW('This is a headless service. '
+                            'Ignoring the event.'))
+                    self.service_added.notify()
+                    return
 
                 # Create a loadbalancer.
                 lb_request = {
