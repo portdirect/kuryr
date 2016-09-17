@@ -74,11 +74,14 @@ def register_watchers(*watchers):
 
 # TODO(devvesa): refactor current decorator approach to allow not intrusive
 #                way to add more watchers.
-# @register_watchers(watchers.K8sEndpointsWatcher,
-#                    watchers.K8sNamespaceWatcher,
-#                    watchers.K8sPodsWatcher,
-#                    watchers.K8sServicesWatcher)
-@register_watchers(watchers.K8sNamespaceWatcher)
+if config.CONF.raven.raven_single_shot:
+    @register_watchers(watchers.K8sNamespaceWatcher)
+else:
+    @register_watchers(watchers.K8sEndpointsWatcher,
+                        watchers.K8sNamespaceWatcher,
+                        watchers.K8sPodsWatcher,
+                        watchers.K8sServicesWatcher)
+
 class Raven(service.Service):
     """A K8s API watcher service watches and translates K8s resources.
 
