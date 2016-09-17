@@ -1301,6 +1301,10 @@ class K8sEndpointsWatcher(K8sAPIWatcher):
             LOG.info(_LI('Ignoring "kubernetes" service since it is not '
                          'supported yet'))
             return
+        if service_name == 'freeipa':
+            LOG.info(_LI('Ignoring "freeipa" service since it is not '
+                         'supported yet'))
+            return
         service_endpoint = utils.get_service_endpoint(namespace, service_name)
 
 
