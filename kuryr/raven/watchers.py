@@ -783,7 +783,6 @@ class K8sServicesWatcher(K8sAPIWatcher):
 
                 # Get the cluserIP from kube.
                 cluster_ip = service_spec['clusterIP']
-
                 if cluster_ip == 'None':
                     LOG.warning(
                         _LW('This is a headless service. '
@@ -1331,7 +1330,7 @@ class K8sEndpointsWatcher(K8sAPIWatcher):
                 # Wait until the service translation is finished.
                 yield from self.service_added.wait()
                 pool = yield from get_pool(service_endpoint)
-            pool_id = pool['id']
+            pool_id = pool.get('id')
             LOG.debug('Pool id %s', pool_id)
 
             if event_type in (ADDED_EVENT, MODIFIED_EVENT):
