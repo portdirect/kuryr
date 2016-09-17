@@ -302,7 +302,7 @@ class Raven(service.Service):
         neutron_service_network_id = service_network['id']
         neutron_router_id = namespace_router['id']
 
-        LOG.debug('Getting servie ports on service network')
+        LOG.debug('Getting service ports on service network')
         filtered_service_ports = controllers._get_ports_by_attrs(
             unique=False, device_owner='network:router_interface',
             device_id=neutron_router_id,
@@ -312,7 +312,6 @@ class Raven(service.Service):
         service_subnet_id = service_subnet['id']
         service_router_ports = self._get_router_ports_by_subnet_id(
             service_subnet_id, filtered_service_ports)
-
 
         if not service_router_ports:
             LOG.debug('Attempting to add service subnet to router')
@@ -335,6 +334,9 @@ class Raven(service.Service):
     def _task_done_callback(self, task):
         endpoint = self._tasks.pop(task)
         LOG.info(_LI('Finished watcher for endpoint "%s"'), endpoint)
+        if config.CONF.raven.raven_single_shot:
+            LOG.info(_LI('Finished Namespace Sweep. Shutting down...'))
+            self.stop()
         if not self._tasks:
             LOG.info(_LI('No more tasks to handle. Shutting down...'))
             self.stop()
@@ -549,5 +551,7 @@ def run_raven():
     """Launchs a Raven service."""
     config.init(sys.argv[1:])
     log.setup(config.CONF, 'Raven')
+    if config.CONF.raven.raven_single_shot:
+        LOG.warning('This instance of raven will terminate after a single namespace sweep')
     raven = service.launch(config.CONF, Raven())
     raven.wait()
