@@ -531,6 +531,7 @@ class K8sNamespaceWatcher(K8sAPIWatcher):
         content = decoded_json.get('object', {})
         metadata = content.get('metadata', {})
         annotations = metadata.get('annotations', {})
+        LOG.info('Successfully translated the namespace')
         if event_type == ADDED_EVENT:
             with (yield from self.namespace_added):
                 namespace_network_name = metadata['name']
@@ -785,9 +786,7 @@ class K8sServicesWatcher(K8sAPIWatcher):
                 # Get the cluserIP from kube.
                 cluster_ip = service_spec['clusterIP']
                 if cluster_ip == 'None':
-                    LOG.warning(
-                        _LW('This is a headless service. '
-                            'No neutron action required.'))
+                    LOG.info("Service Watcher skipping %s as it is headless", service_name)
                     return
 
                 # Create a loadbalancer.
@@ -1336,7 +1335,7 @@ class K8sEndpointsWatcher(K8sAPIWatcher):
             pool_id = pool.get('id')
             LOG.debug('Pool id %s', pool_id)
             if pool_id == 'None':
-                LOG.info(_LI('This is a headless service, not updating pool'))
+                LOG.info("Pool Watcher skipping %s as it is headless", service_name)
                 return
             if event_type in (ADDED_EVENT, MODIFIED_EVENT):
                 endpoint_members = _get_endpoint_members(content.get('subsets',
