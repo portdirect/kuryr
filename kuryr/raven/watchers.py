@@ -531,7 +531,7 @@ class K8sNamespaceWatcher(K8sAPIWatcher):
         content = decoded_json.get('object', {})
         metadata = content.get('metadata', {})
         annotations = metadata.get('annotations', {})
-        LOG.info('Successfully translated the namespace')
+        LOG.info("Namespace Watcher processing %s", metadata['name'])
         if event_type == ADDED_EVENT:
             with (yield from self.namespace_added):
                 namespace_network_name = metadata['name']
