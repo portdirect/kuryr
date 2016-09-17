@@ -75,8 +75,8 @@ def register_watchers(*watchers):
 # TODO(devvesa): refactor current decorator approach to allow not intrusive
 #                way to add more watchers.
 
-if config.CONF.raven.raven_single_shot is True:
-    watchers = watchers.K8sNamespaceWatcher
+if config.CONF.raven.raven_single_shot == 'True':
+    watchers = (watchers.K8sNamespaceWatcher,)
 else:
     watchers = (watchers.K8sEndpointsWatcher, watchers.K8sNamespaceWatcher, watchers.K8sPodsWatcher, watchers.K8sServicesWatcher)
 
@@ -337,7 +337,7 @@ class Raven(service.Service):
     def _task_done_callback(self, task):
         endpoint = self._tasks.pop(task)
         LOG.info(_LI('Finished watcher for endpoint "%s"'), endpoint)
-        if config.CONF.raven.raven_single_shot is True:
+        if config.CONF.raven.raven_single_shot == 'True':
             LOG.info(_LI('Finished Namespace Sweep. Shutting down...'))
             self.stop()
         if not self._tasks:
@@ -554,7 +554,7 @@ def run_raven():
     """Launchs a Raven service."""
     config.init(sys.argv[1:])
     log.setup(config.CONF, 'Raven')
-    if config.CONF.raven.raven_single_shot is True:
+    if config.CONF.raven.raven_single_shot == 'True':
         LOG.warning('This instance of raven will terminate after a single namespace sweep')
     raven = service.launch(config.CONF, Raven())
     raven.wait()
