@@ -111,6 +111,7 @@ def _make_up_veth(peer_veth, neutron_port, neutron_subnet,
             cidr = netaddr.IPNetwork(neutron_subnet['cidr'])
             peer_veth.add_ip(fixed_ip[IP_ADDRESS_KEY], cidr.prefixlen)
     peer_veth.address = neutron_port[MAC_ADDRESS_KEY].lower()
+    peer_veth.mtu = 1442
     if not _is_up(peer_veth):
         peer_veth.up()
 
